@@ -48,46 +48,6 @@ export const registerUser = async (name: string, email: string, password: string
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Fetch the current user's profile using the Bearer token.
- */
 export const fetchUserProfile = async (token: string): Promise<User> => {
   const response = await fetch(`${BASE_URL}/me`, {
     method: "GET",
@@ -98,6 +58,21 @@ export const fetchUserProfile = async (token: string): Promise<User> => {
 
   if (!response.ok) {
     throw new Error("Failed to fetch user profile. Session might be expired.");
+  }
+
+  return response.json();
+};
+
+export const fetchAllUsers = async (token: string): Promise<User[]> => {
+  const response = await fetch(`${BASE_URL}/users`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch users.");
   }
 
   return response.json();
