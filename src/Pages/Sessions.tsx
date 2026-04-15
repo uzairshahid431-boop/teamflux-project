@@ -319,6 +319,7 @@ const Sessions: React.FC = () => {
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
           onExport={handleExport}
+          onRefresh={loadData}
         />
       )}
     </div>

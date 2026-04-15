@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../Context/AuthContext";
 import { fetchSessions, type ActionItem } from "../Services/sessionService";
-import { FiCheckCircle, FiClock, FiAlertCircle, FiChevronRight } from "react-icons/fi";
+import { fetchDashboardSummary, type DashboardStats } from "../Services/dashboardService";
+import { FiCheckCircle, FiClock, FiAlertCircle, FiChevronRight, FiBriefcase, FiTarget, FiUsers } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [myActions, setMyActions] = useState<ActionItem[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadActions = async () => {
+    const loadDashboardData = async () => {
       if (!token || !user) return;
       try {
-        const sessions = await fetchSessions(token);
+        const [sessions, summaryData] = await Promise.all([
+          fetchSessions(token),
+          fetchDashboardSummary(token)
+        ]);
+        
+        // Process Actions
         const allActions = sessions.flatMap(s => s.action_items || []);
         const filtered = allActions.filter(item => item.assignee_id === user.id && item.status !== 'completed');
         setMyActions(filtered.sort((a, b) => {
@@ -20,14 +29,16 @@ const Dashboard: React.FC = () => {
           if (!b.due_date) return -1;
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }));
+
+        setStats(summaryData);
       } catch (error) {
-        console.error("Failed to load dashboard actions", error);
+        console.error("Failed to load dashboard data", error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadActions();
+    loadDashboardData();
   }, [token, user]);
 
   const overdueCount = myActions.filter(item => item.due_date && new Date(item.due_date) < new Date()).length;
@@ -51,49 +62,80 @@ const Dashboard: React.FC = () => {
         {/* Stats Column */}
         <div className="lg:col-span-3 space-y-6">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all cursor-pointer" onClick={() => navigate('/dashboard/projects')}>
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <FiBriefcase size={80} />
+                </div>
                 <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Total Projects</h3>
-                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">12</p>
+                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">{loading ? '...' : stats?.totalProjects}</p>
                 <div className="mt-5 flex items-center gap-2">
-                  <span className="text-emerald-500 text-xs font-black">+2 This Week</span>
+                  <span className="text-emerald-500 text-xs font-black">{stats?.projectsChange}</span>
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all cursor-pointer" onClick={() => navigate('/dashboard/teams')}>
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <FiUsers size={80} />
+                </div>
                 <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Active Teams</h3>
-                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">4</p>
+                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">{loading ? '...' : stats?.activeTeams}</p>
                 <div className="mt-5">
-                  <span className="text-gray-400 text-xs font-black">Stable Impact</span>
+                  <span className="text-blue-500 text-xs font-black">{stats?.teamsStatus}</span>
                 </div>
               </div>
 
-              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-all cursor-pointer" onClick={() => navigate('/dashboard/debt')}>
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <FiTarget size={80} />
+                </div>
                 <h3 className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Tech Debt Score</h3>
-                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">84<span className="text-lg text-gray-300">/100</span></p>
+                <p className="text-4xl font-black text-gray-900 mt-3 tracking-tighter">{loading ? '...' : stats?.debtScore}<span className="text-lg text-gray-300">/100</span></p>
                 <div className="mt-5">
-                  <span className="text-emerald-500 text-xs font-black">Healthy Refactor</span>
+                  <span className={`${(stats?.debtScore || 0) > 80 ? 'text-emerald-500' : (stats?.debtScore || 0) > 60 ? 'text-amber-500' : 'text-rose-500'} text-xs font-black`}>
+                    {stats?.debtStatus}
+                  </span>
                 </div>
               </div>
            </div>
 
            {/* Activity List */}
-           <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm">
+           <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm min-h-[400px]">
             <h2 className="text-xl font-black text-gray-900 mb-8 tracking-tighter uppercase">Recent Activity</h2>
             <div className="space-y-8">
-              {[1, 2].map((i) => (
-                <div key={i} className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 bg-gray-50 text-gray-900 rounded-2xl flex items-center justify-center font-black text-xs mr-5 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                      P{i}
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-900 text-[15px] tracking-tight">Project Evolution Update {i}</p>
-                      <p className="text-xs text-gray-400 font-bold mt-0.5">Automated synchronization • 2 hours ago</p>
+              {loading ? (
+                Array(3).fill(0).map((_, i) => (
+                  <div key={i} className="flex items-center animate-pulse">
+                    <div className="h-12 w-12 bg-gray-100 rounded-2xl mr-5"></div>
+                    <div className="flex-1 space-y-2">
+                       <div className="h-4 bg-gray-100 rounded w-1/4"></div>
+                       <div className="h-3 bg-gray-50 rounded w-1/2"></div>
                     </div>
                   </div>
-                  <FiChevronRight className="text-gray-300 group-hover:text-blue-600 transition-all" size={20} />
+                ))
+              ) : !stats?.recentActivity || stats.recentActivity.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50/50 rounded-[2rem]">
+                   <p className="text-sm font-bold text-gray-400">No recent activity detected.</p>
                 </div>
-              ))}
+              ) : (
+                stats.recentActivity.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between group cursor-pointer" onClick={() => item.link && navigate(item.link)}>
+                    <div className="flex items-center">
+                      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-xs mr-5 transition-all
+                        ${item.type === 'project' ? 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white' : 
+                          item.type === 'debt' ? 'bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white' : 
+                          'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'}`}
+                      >
+                        {item.type === 'project' ? 'PROJ' : item.type === 'debt' ? 'DEBT' : 'GESS'}
+                      </div>
+                      <div>
+                        <p className="font-black text-gray-900 text-[15px] tracking-tight">{item.title}</p>
+                        <p className="text-xs text-gray-400 font-bold mt-0.5">{item.subtitle} • {new Date(item.date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <FiChevronRight className="text-gray-300 group-hover:text-blue-600 transition-all" size={20} />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

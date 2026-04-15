@@ -7,6 +7,8 @@ import DashboardLayout from "./Components/DashboardLayout";
 import Teams from "./Pages/Teams";
 import Projects from "./Pages/Projects";
 import Sessions from "./Pages/Sessions";
+import TechnicalDebt from "./Pages/TechnicalDebt";
+import DebtDashboard from "./Pages/DebtDashboard";
 import "./App.css";
 
 function App() {
@@ -45,8 +47,9 @@ function App() {
         <Route path="teams" element={<Teams />} />
         <Route path="projects" element={<Projects />} />
         <Route path="sessions" element={<Sessions />}/>
-        {/* <Route path="debt" element={<Debts />} */}
-        {/* <Route path="deprecations" element={<div className="glass p-12 rounded-[2.5rem] border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500"><h1 className="text-3xl font-black text-white tracking-tighter">Deprecations Shell</h1><p className="text-slate-500 mt-2 font-medium">Matrix synchronization in progress...</p></div>} /> */}
+        <Route path="debt" element={<TechnicalDebt />} />
+        <Route path="debt/analytics" element={<DebtDashboard />} />
+        <Route path="deprecations" element={<div className="glass p-12 rounded-[2.5rem] border border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-500"><h1 className="text-3xl font-black text-white tracking-tighter">Deprecations Shell</h1><p className="text-slate-500 mt-2 font-medium">Matrix synchronization in progress...</p></div>} />
       </Route>
       <Route
         path="/"
