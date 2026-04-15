@@ -23,14 +23,24 @@ const Teams: React.FC = () => {
     if (!token) return;
     setLoading(true);
     try {
+      const teamsPromise = fetchTeams(token).catch(err => {
+        console.warn('Teams: Failed to fetch teams', err);
+        return [] as Team[];
+      });
+      const usersPromise = fetchAllUsers(token).catch(err => {
+        console.warn('Teams: Failed to fetch users', err);
+        return [] as User[];
+      });
+
       const [teamsData, usersData] = await Promise.all([
-        fetchTeams(token),
-        fetchAllUsers(token)
+        teamsPromise,
+        usersPromise
       ]);
-      setTeams(teamsData);
-      setAllUsers(usersData);
+      
+      setTeams(teamsData || []);
+      setAllUsers(usersData || []);
     } catch (err: any) {
-      setError('System failure: Unable to synchronize with team matrix.');
+      setError('Matrix synchronization failed: Data sector isolated.');
       console.error(err);
     } finally {
       setLoading(false);

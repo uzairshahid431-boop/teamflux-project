@@ -15,13 +15,13 @@ const Projects: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // UI State
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [teamFilter, setTeamFilter] = useState<string>('all');
-  
+
   // Dialog/Modal state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -31,14 +31,26 @@ const Projects: React.FC = () => {
     if (!token) return;
     setLoading(true);
     try {
-      const [projectsData, teamsData] = await Promise.all([
-        fetchProjects(token),
-        fetchTeams(token)
-      ]);
-      setProjects(projectsData);
-      setTeams(teamsData);
+      const projectsPromise = fetchProjects(token).catch(err => {
+        console.warn('Projects: Failed to fetch projects', err);
+        return [] as Project[];
+      });
+      const teamsPromise = fetchTeams(token).catch(err => {
+        console.warn('Projects: Failed to fetch teams', err);
+        return [] as Team[];
+      });
+
+      const [projectsData, teamsData] = await Promise.all([projectsPromise, teamsPromise]);
+      
+      setProjects(projectsData || []);
+      setTeams(teamsData || []);
+      
+      if (projectsData.length === 0 && teamsData.length === 0) {
+        // If both failed or are truly empty, we can show a generic hint but not a crash
+        console.log('No data retrieved from synchronized sectors.');
+      }
     } catch (err: any) {
-      setError('System failure: Matrix connectivity lost.');
+      setError('Sector Access Restricted: Verify credentials.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -130,12 +142,12 @@ const Projects: React.FC = () => {
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Projects</h1>
-          <p className="text-gray-500 mt-2 font-medium flex items-center gap-2">
+          {/* <p className="text-gray-500 mt-2 font-medium flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             Operational theater for all active campaigns
-          </p>
+          </p> */}
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-3">
           {/* Filters Bar */}
           <div className="flex items-center gap-2 bg-white p-1.5 border border-gray-100 rounded-2xl shadow-sm">
@@ -151,9 +163,9 @@ const Projects: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="h-8 w-[1px] bg-gray-100 mx-1"></div>
-            
+
             <select
               className="bg-transparent text-sm font-bold text-gray-700 focus:outline-none px-3 cursor-pointer"
               value={teamFilter}
@@ -267,12 +279,12 @@ const Projects: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <div 
+                      <div
                         onClick={(e) => { e.stopPropagation(); }} // Prevent modal opening when clicking status (though table doesn't have quick switcher yet)
                         className={`inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black uppercase tracking-tight
-                        ${p.status === 'active' ? 'text-emerald-600 bg-emerald-50' : 
-                          p.status === 'completed' ? 'text-blue-600 bg-blue-50' : 
-                          'text-amber-600 bg-amber-50'}`}
+                        ${p.status === 'active' ? 'text-emerald-600 bg-emerald-50' :
+                            p.status === 'completed' ? 'text-blue-600 bg-blue-50' :
+                              'text-amber-600 bg-amber-50'}`}
                       >
                         <FiActivity size={10} />
                         {p.status === 'completed' ? 'Archived' : p.status === 'inactive' ? 'On Hold' : 'Active'}

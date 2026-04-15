@@ -32,14 +32,18 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const displayName = user?.name || user?.email?.split('@')[0] || 'User';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 z-20 sticky top-0">
-      <div className="flex items-center flex-1">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 z-20 sticky top-0 w-full animate-in slide-in-from-top duration-300">
+      <div className="flex items-center flex-1 gap-4">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="md:hidden p-2 mr-3 text-gray-500 hover:text-gray-700"
+          className="md:hidden p-2 text-gray-500 hover:text-gray-700"
         >
           <FiMenu size={24} />
         </button>
+
+        <span className="text-xl font-black text-blue-700 tracking-tight">TeamFlux</span>
+        
+        <div className="h-6 w-[1px] bg-gray-100 mx-2 hidden md:block"></div>
         
         {/* Search Bar */}
         <div className="hidden sm:flex relative items-center max-w-sm w-full">

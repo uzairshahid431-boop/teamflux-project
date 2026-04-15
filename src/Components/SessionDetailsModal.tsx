@@ -156,7 +156,6 @@ const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
           <div className="space-y-12 pb-10">
             <SessionNotes 
               sessionId={session.id} 
-              notes={session.notes || []} 
               onNoteChange={onRefresh} 
             />
             
@@ -164,7 +163,6 @@ const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
 
             <ActionItemsList 
               sessionId={session.id} 
-              items={session.action_items || []} 
               members={team?.members || []} 
               onItemChange={onRefresh} 
             />

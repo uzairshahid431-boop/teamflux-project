@@ -162,7 +162,20 @@ export const exportIcs = async (id: number, token: string): Promise<void> => {
   document.body.removeChild(a);
 };
 
-// Notes operations
+export const fetchNotes = async (sessionId: number, token: string): Promise<SessionNote[]> => {
+  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch notes.");
+  }
+  return response.json();
+};
+
 export const createNote = async (sessionId: number, content: string, token: string): Promise<SessionNote> => {
   const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/`, {
     method: "POST",
@@ -209,6 +222,20 @@ export const deleteNote = async (sessionId: number, noteId: number, token: strin
 };
 
 // Action Items operations
+export const fetchActionItems = async (sessionId: number, token: string): Promise<ActionItem[]> => {
+  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch action items.");
+  }
+  return response.json();
+};
+
 export const createActionItem = async (sessionId: number, data: { title: string; status?: ActionItemStatus; assignee_id?: number; due_date?: string }, token: string): Promise<ActionItem> => {
   const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/`, {
     method: "POST",
@@ -216,7 +243,7 @@ export const createActionItem = async (sessionId: number, data: { title: string;
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`,
     },
-    body: JSON.stringify({ ...data, titlr: data.title }), // Backend schema uses 'titlr' for some reason in ActionItemBase?
+    body: JSON.stringify({ ...data, titlr: data.title }), // Backend schema uses 'titlr' alias specifically for creation
   });
 
   if (!response.ok) {
