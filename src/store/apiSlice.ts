@@ -12,7 +12,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Project', 'Team', 'TechnicalDebt', 'Session'],
+  tagTypes: ['Project', 'Team', 'TechnicalDebt', 'Session', 'Deprecation'],
   endpoints: (builder) => ({
     // Endpoints will be injected from specific files or defined here
     getProjects: builder.query<any[], void>({
@@ -67,6 +67,43 @@ export const apiSlice = createApi({
       query: () => '/dashboard/technical-debt',
       providesTags: ['TechnicalDebt'],
     }),
+    // Deprecations
+    getDeprecations: builder.query<any[], void>({
+      query: () => '/deprecations/deprecation',
+      providesTags: ['Deprecation'],
+    }),
+    addDeprecation: builder.mutation<any, Partial<any>>({
+      query: (body) => ({
+        url: '/deprecations/deprecation',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Deprecation'],
+    }),
+    updateDeprecation: builder.mutation<any, { id: number; data: Partial<any> }>({
+      query: ({ id, data }) => ({
+        url: `/deprecations/deprecation/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Deprecation'],
+    }),
+    deleteDeprecation: builder.mutation<any, number>({
+      query: (id) => ({
+        url: `/deprecations/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Deprecation'],
+    }),
+    // Timeline
+    addDeprecationTimeline: builder.mutation<any, { deprecationId: number; data: any }>({
+      query: ({ deprecationId, data }) => ({
+        url: `/deprecation_timeline/deprecations/${deprecationId}/timeline`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Deprecation'],
+    }),
   }),
 });
 
@@ -79,5 +116,10 @@ export const {
   useAddDebtCommentMutation,
   useUpdateDebtCommentMutation,
   useDeleteDebtCommentMutation,
-  useGetDebtDashboardQuery
+  useGetDebtDashboardQuery,
+  useGetDeprecationsQuery,
+  useAddDeprecationMutation,
+  useUpdateDeprecationMutation,
+  useDeleteDeprecationMutation,
+  useAddDeprecationTimelineMutation
 } = apiSlice;
