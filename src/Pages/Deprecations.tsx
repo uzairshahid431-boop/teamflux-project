@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   FiSearch, FiAlertTriangle, FiArchive, FiDatabase,
   FiTool, FiBox, FiActivity, FiBriefcase, FiCalendar, FiArrowRight, FiPlus,
-  FiClock, FiPieChart, FiShield
+  FiClock, FiPieChart, FiShield, FiRefreshCcw
 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { useAuth } from '../Context/AuthContext';
 import { fetchProjects } from '../Services/projectService';
 import DeprecationDetailModal from '../Components/DeprecationDetailModal';
@@ -51,7 +52,7 @@ const DeprecationsPage: React.FC = () => {
   const { token } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   
-  const { data: dbItems = [], isLoading } = useGetDeprecationsQuery();
+  const { data: dbItems = [], isLoading, isError, refetch } = useGetDeprecationsQuery();
   const [addDeprecation] = useAddDeprecationMutation();
   const [updateDeprecation] = useUpdateDeprecationMutation();
   const [deleteDeprecationItem] = useDeleteDeprecationMutation();
@@ -200,9 +201,10 @@ const DeprecationsPage: React.FC = () => {
                  }
               }
           }
+          toast.success('Deprecation saved successfully');
       } catch (err) {
           console.error("Failed to save deprecation", err);
-          alert("Failed to save deprecation. See console for details.");
+          toast.error("Failed to save deprecation.");
       }
   };
 
@@ -210,9 +212,10 @@ const DeprecationsPage: React.FC = () => {
       if (confirm("Are you sure you want to delete this item?")) {
           try {
               await deleteDeprecationItem(id).unwrap();
+              toast.success('Deprecation deleted successfully');
           } catch (err) {
               console.error("Failed to delete deprecation", err);
-              alert("Failed to delete. See console for details.");
+              toast.error("Failed to delete deprecation.");
           }
       }
   };
@@ -298,6 +301,18 @@ const DeprecationsPage: React.FC = () => {
         </div>
       </div>
 
+      {isError && (
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <span className="text-rose-600 text-sm font-bold">Failed to load deprecations data.</span>
+          <button 
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+          >
+            <FiRefreshCcw size={14} /> Retry
+          </button>
+        </div>
+      )}
+
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-white p-2 border border-gray-100 rounded-[2rem] shadow-sm">
         <div className="relative group flex-1 min-w-[200px]">
@@ -356,26 +371,34 @@ const DeprecationsPage: React.FC = () => {
       {/* Deprecations Table */}
       <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-50">
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Item</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Impact</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Project</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Removal Date</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Item</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Impact</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Project</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Removal Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
-                  <tr>
-                      <td colSpan={5} className="px-8 py-20 text-center">
-                          <div className="flex flex-col items-center">
-                              <span className="w-8 h-8 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin mb-4"></span>
-                              <h3 className="text-sm font-black text-gray-900">Loading Deprecations...</h3>
-                          </div>
+                <>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        </div>
                       </td>
-                  </tr>
+                      <td className="px-6 sm:px-8 py-6"><div className="h-6 bg-gray-200 rounded-lg w-20"></div></td>
+                      <td className="px-6 sm:px-8 py-6"><div className="h-6 bg-gray-200 rounded-lg w-16"></div></td>
+                      <td className="px-6 sm:px-8 py-6"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                      <td className="px-6 sm:px-8 py-6"><div className="h-8 bg-gray-200 rounded-xl w-24"></div></td>
+                    </tr>
+                  ))}
+                </>
               ) : filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
@@ -400,7 +423,7 @@ const DeprecationsPage: React.FC = () => {
                       className="group hover:bg-gray-50/40 transition-colors cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-300"
                       style={{ animationDelay: `${idx * 50}ms` }}
                     >
-                      <td className="px-8 py-6 max-w-md">
+                      <td className="px-6 sm:px-8 py-6 max-w-md">
                         <div className="flex flex-col gap-2">
                           <div>
                             <p className="text-sm font-black text-gray-900 truncate group-hover:text-blue-600 transition-colors">{item.title}</p>
@@ -414,23 +437,23 @@ const DeprecationsPage: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-6 sm:px-8 py-6">
                         <div className="flex items-center gap-2 text-xs font-bold text-gray-700 px-2.5 py-1.5 bg-gray-50 rounded-lg border border-gray-100 w-fit">
                           {getTypeIcon(item.type)}
                           {item.type}
                         </div>
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-6 sm:px-8 py-6">
                         {getImpactBadge(item.impact_level)}
                       </td>
-                      <td className="px-8 py-6">
-                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700">
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 whitespace-nowrap">
                           <FiBriefcase size={12} className="text-gray-400" />
                           {projectMatch ? projectMatch.name : 'Global / Cross'}
                         </div>
                       </td>
-                      <td className="px-8 py-6">
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border whitespace-nowrap ${isOverdue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
                           <FiCalendar size={12} />
                           <span className="text-xs font-bold">
                             {item.target_removal_date ? new Date(item.target_removal_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}

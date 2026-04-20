@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FiPlus, FiSearch, FiAlertCircle, FiChevronLeft, FiChevronRight, 
   FiArrowUp, FiArrowDown, FiMaximize2, FiEdit2, FiTrash2, FiTarget,
-  FiBriefcase, FiUser, FiClock
+  FiBriefcase, FiUser, FiClock, FiRefreshCcw
 } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { useAuth } from '../Context/AuthContext';
 import { fetchProjects } from '../Services/projectService';
 import type { Project } from '../Services/projectService';
@@ -86,10 +87,11 @@ const TechnicalDebtPage: React.FC = () => {
       setUsers(usersData || []);
       
       if (debtsData.length === 0 && error === '') {
-        // Optional: can check if unauthorized specifically but let's keep it resilient
+        // Optional
       }
     } catch (err: any) {
       setError('Archeological Registry Sync Error: Segment isolated.');
+      toast.error('Failed to load technical debt');
       console.error(err);
     } finally {
       setLoading(false);
@@ -130,25 +132,29 @@ const TechnicalDebtPage: React.FC = () => {
       if (selectedDebt) {
         const updated = await updateTechnicalDebt(selectedDebt.id, data, token);
         setDebts(prev => prev.map(d => d.id === updated.id ? updated : d));
+        toast.success('Technical debt updated successfully');
       } else {
         await createTechnicalDebt(data, token);
-        // Refresh to get nested objects (owner, project) correctly from backend if needed
-        // Or manually inject if we have them
         loadData();
+        toast.success('Technical debt logged successfully');
       }
     } catch (err: any) {
+      toast.error(err.message || 'Failed to save technical debt');
       throw err;
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!token || !window.confirm('Erase this technical debt record from the registry?')) return;
+    if (!token) return;
+    const isConfirmed = window.confirm('Erase this technical debt record from the registry?');
+    if (!isConfirmed) return;
     try {
       await deleteTechnicalDebt(id, token);
       setDebts(prev => prev.filter(d => d.id !== id));
       setIsDetailsOpen(false);
+      toast.success('Technical debt deleted successfully');
     } catch (err: any) {
-      alert('Deletion protocol rejected: ' + err.message);
+      toast.error('Deletion protocol rejected: ' + err.message);
     }
   };
 
@@ -156,11 +162,11 @@ const TechnicalDebtPage: React.FC = () => {
     if (!token || !selectedDebt) return;
     try {
       await updateDebtStatus(selectedDebt.id, status, token);
-      // Status update returns a message, we need to refresh or update state locally
       setDebts(prev => prev.map(d => d.id === selectedDebt.id ? { ...d, status } : d));
       setSelectedDebt(prev => prev ? { ...prev, status } : null);
+      toast.success('Status updated successfully');
     } catch (err: any) {
-      alert('Status realignment failed: ' + err.message);
+      toast.error('Status realignment failed: ' + err.message);
     }
   };
 
@@ -202,9 +208,44 @@ const TechnicalDebtPage: React.FC = () => {
 
   if (loading && debts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="w-12 h-12 border-4 border-amber-600/20 border-t-amber-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Scanning Structural Integrity...</p>
+      <div className="space-y-6 animate-pulse p-4 sm:p-6 lg:p-8">
+        <div className="h-10 bg-gray-200 rounded-xl w-48 mb-8"></div>
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-sm">
+          <div className="border-b border-gray-50 bg-gray-50/50 p-4 flex gap-4">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/6"></div>
+          </div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="p-6 border-b border-gray-50 flex gap-4 items-center">
+              <div className="flex gap-4 w-1/4 items-center">
+                <div className="w-10 h-10 rounded-xl bg-gray-200 shrink-0"></div>
+                <div className="space-y-2 w-full">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+              <div className="w-1/6"><div className="h-6 bg-gray-200 rounded w-16"></div></div>
+              <div className="space-y-2 w-1/6">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+              <div className="space-y-2 w-1/6">
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+              <div className="w-1/6"><div className="h-6 bg-gray-200 rounded-xl w-20"></div></div>
+              <div className="w-1/6 flex justify-end gap-2">
+                <div className="h-8 w-8 bg-gray-200 rounded-xl"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-xl"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-xl"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -291,8 +332,14 @@ const TechnicalDebtPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold">
-          {error}
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <span className="text-rose-600 text-sm font-bold">{error}</span>
+          <button 
+            onClick={loadData}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+          >
+            <FiRefreshCcw size={14} /> Retry
+          </button>
         </div>
       )}
 

@@ -4,15 +4,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { useGetDebtDashboardQuery, useGetTechnicalDebtsQuery } from '../store/apiSlice';
-import { FiDownload, FiAlertCircle, FiClock, FiActivity, FiTarget, FiLoader } from 'react-icons/fi';
+import { FiDownload, FiAlertCircle, FiClock, FiActivity, FiTarget, FiRefreshCcw } from 'react-icons/fi';
 import { formatDistanceToNow } from 'date-fns';
+import toast from 'react-hot-toast';
 
 import { useAuth } from '../Context/AuthContext';
 
 const DebtDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { data: stats, isLoading: isStatsLoading } = useGetDebtDashboardQuery();
-  const { data: debts = [], isLoading: isDebtsLoading } = useGetTechnicalDebtsQuery({});
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError, refetch: refetchStats } = useGetDebtDashboardQuery();
+  const { data: debts = [], isLoading: isDebtsLoading, isError: isDebtsError, refetch: refetchDebts } = useGetTechnicalDebtsQuery({});
 
   const isAdmin = user?.role === 'admin';
   const isLead = user?.role === 'lead';
@@ -34,7 +35,7 @@ const DebtDashboard: React.FC = () => {
 
   const handleExportCSV = async () => {
     if (isViewer) {
-      alert('Unauthorized: Viewers cannot export data registries.');
+      toast.error('Unauthorized: Viewers cannot export data registries.');
       return;
     }
     const token = localStorage.getItem('auth_token');
@@ -58,17 +59,40 @@ const DebtDashboard: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.success('Export downloaded successfully');
     } catch (err) {
       console.error('Export failed:', err);
-      alert('Failed to export CSV. Please try again.');
+      toast.error('Failed to export CSV. Please try again.');
     }
   };
 
   if (isStatsLoading || isDebtsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <FiLoader className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-        <p className="text-sm font-black text-gray-400 uppercase tracking-widest animate-pulse">Synchronizing Analytics Matrix...</p>
+      <div className="space-y-6 animate-pulse p-4 sm:p-6 lg:p-8">
+        <div className="h-10 bg-gray-200 rounded-xl w-48 mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-gray-100 rounded-[2.5rem] h-40"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          <div className="bg-gray-100 rounded-[3rem] h-[400px]"></div>
+          <div className="bg-gray-100 rounded-[3rem] h-[400px]"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isStatsError || isDebtsError) {
+    return (
+      <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+        <span className="text-rose-600 text-sm font-bold">Failed to load analytics matrix.</span>
+        <button 
+          onClick={() => { refetchStats(); refetchDebts(); }}
+          className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+        >
+          <FiRefreshCcw size={14} /> Retry
+        </button>
       </div>
     );
   }
@@ -231,7 +255,7 @@ const DebtDashboard: React.FC = () => {
            <div className="px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase">Requires Attention</div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50/50">
                 <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Debt Item</th>

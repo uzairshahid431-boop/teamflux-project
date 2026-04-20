@@ -150,14 +150,14 @@ const SessionModal: React.FC<SessionModalProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
               <FiCalendar size={14} className="text-gray-400" />
-              Session Title
+              Session Title <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+              className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('title') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all`}
               placeholder="e.g. Q2 Strategic Alignment"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {setTitle(e.target.value); setError('');}}
               required
             />
           </div>
@@ -166,7 +166,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiCalendar size={14} className="text-gray-400" />
-                Date
+                Date <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
@@ -181,7 +181,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                   <FiClock size={14} className="text-gray-400" />
-                  Start
+                  Start <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="time"
@@ -194,7 +194,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
               <div className="space-y-2">
                 <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                   <FiClock size={14} className="text-gray-400" />
-                  End
+                  End <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="time"
@@ -211,12 +211,12 @@ const SessionModal: React.FC<SessionModalProps> = ({
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiUsers size={14} className="text-gray-400" />
-                Squad (Team)
+                Squad (Team) <span className="text-rose-500">*</span>
               </label>
               <select
-                className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer"
+                className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('team') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer`}
                 value={teamId}
-                onChange={(e) => setTeamId(Number(e.target.value))}
+                onChange={(e) => {setTeamId(Number(e.target.value)); setError('');}}
                 required
               >
                 <option value="" disabled>Select Team</option>

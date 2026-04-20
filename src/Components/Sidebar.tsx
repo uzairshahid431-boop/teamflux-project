@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
       {/* Sidebar container */}
       <aside 
-        className={`fixed md:sticky top-0 md:top-16 left-0 z-30 h-screen md:h-[calc(100vh-64px)] bg-white border-r border-gray-100 transform transition-all duration-300 ease-in-out ${
+        className={`fixed md:sticky top-0 md:top-16 left-0 z-30 h-screen md:h-[calc(100vh-64px)] bg-white border-r border-gray-100 transform transition-opacity duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64 flex flex-col`}
       >
@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             className="hidden md:flex p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            <FiMenu size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-90' : ''}`} />
+            <FiMenu size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-0' : ''}`} />
           </button>
           
           <button 
@@ -72,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                 key={item.name}
                 to={item.path}
                 // Use 'end' for the root dashboard and 'Debt' to prevent overlapping highlights
-                end={item.path === '/dashboard' || item.name === 'Debt'}
+                end={item.path === '/dashboard' || item.name === 'Deprecations'}
                 onClick={() => setIsOpen(false)}
                 title={isCollapsed ? item.name : ""}
                 className={({ isActive }) =>
@@ -90,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           })}
         </nav>
         
-        {!isCollapsed && (
+        {/* {!isCollapsed && (
           <div className="p-4 animate-in fade-in duration-500">
             <div className="bg-blue-50/50 rounded-2xl p-6 text-center">
               <p className="text-sm font-bold text-blue-900 mb-1">Go Premium</p>
@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </aside>
     </>
   );

@@ -110,15 +110,16 @@ const ProjectDialog: React.FC<ProjectDialogProps> = ({
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
               <FiBriefcase size={14} className="text-gray-400" />
-              Project Name
+              Project Name{' '}
+              <span className="text-rose-500">*</span>
             </label>
             <input
               id="name"
               type="text"
-              className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
+              className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('name') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium`}
               placeholder="e.g. Phoenix Rising"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {setName(e.target.value); setError('');}}
               required
             />
           </div>
@@ -142,13 +143,13 @@ const ProjectDialog: React.FC<ProjectDialogProps> = ({
             <div className="space-y-2">
               <label htmlFor="team" className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiLayers size={14} className="text-gray-400" />
-                Team
+                Team <span className="text-rose-500">*</span>
               </label>
               <select
                 id="team"
-                className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer"
+                className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('Team') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer`}
                 value={teamId}
-                onChange={(e) => setTeamId(Number(e.target.value))}
+                onChange={(e) => {setTeamId(Number(e.target.value)); setError('');}}
                 required
               >
                 <option value="" disabled>Select Team</option>
@@ -161,7 +162,7 @@ const ProjectDialog: React.FC<ProjectDialogProps> = ({
             <div className="space-y-2">
               <label htmlFor="status" className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiActivity size={14} className="text-gray-400" />
-                Status
+                Status <span className="text-rose-500">*</span>
               </label>
               <select
                 id="status"

@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './Context/AuthContext.tsx'
 import { UIProvider } from './Context/UIContext.tsx'
 import App from './App.tsx'
+import { Toaster } from 'react-hot-toast'
 import './App.css'
 
 import { Provider } from 'react-redux'
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <UIProvider>
             <App />
+            <Toaster position="top-right" />
           </UIProvider>
         </AuthProvider>
       </BrowserRouter>

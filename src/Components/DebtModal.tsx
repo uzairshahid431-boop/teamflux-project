@@ -137,14 +137,14 @@ const DebtModal: React.FC<DebtModalProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
               <FiTag size={14} className="text-gray-400" />
-              Intelligence Title
+              Intelligence Title <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+              className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('Title') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all`}
               placeholder="e.g. Refactor API polling mechanism"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {setTitle(e.target.value); setError('');}}
               required
             />
           </div>
@@ -165,12 +165,12 @@ const DebtModal: React.FC<DebtModalProps> = ({
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiBriefcase size={14} className="text-gray-400" />
-                Linked Project
+                Linked Project <span className="text-rose-500">*</span>
               </label>
               <select
-                className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer"
+                className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('project') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer`}
                 value={projectId}
-                onChange={(e) => setProjectId(Number(e.target.value))}
+                onChange={(e) => {setProjectId(Number(e.target.value)); setError('');}}
                 required
               >
                 <option value={0} disabled>Select Project</option>
@@ -183,12 +183,12 @@ const DebtModal: React.FC<DebtModalProps> = ({
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                 <FiUser size={14} className="text-gray-400" />
-                Assignee (Owner)
+                Assignee (Owner) <span className="text-rose-500">*</span>
               </label>
               <select
-                className="block w-full px-5 py-3.5 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer"
+                className={`block w-full px-5 py-3.5 bg-gray-50/50 border ${error.includes('owner') ? 'border-rose-400' : 'border-gray-200'} rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none appearance-none cursor-pointer`}
                 value={ownerId}
-                onChange={(e) => setOwnerId(Number(e.target.value))}
+                onChange={(e) => {setOwnerId(Number(e.target.value)); setError('');}}
                 required
               >
                 <option value={0} disabled>Select Owner</option>

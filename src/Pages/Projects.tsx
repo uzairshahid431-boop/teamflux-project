@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiGrid, FiList, FiSearch, FiBriefcase, FiLayers, FiActivity, FiEdit2, FiTrash2, FiMaximize2 } from 'react-icons/fi';
+import { FiPlus, FiGrid, FiList, FiSearch, FiBriefcase, FiLayers, FiActivity, FiEdit2, FiTrash2, FiMaximize2, FiRefreshCcw } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../Services/projectService';
 import type { Project, ProjectStatus } from '../Services/projectService';
 import { fetchTeams } from '../Services/teamService';
@@ -30,6 +31,7 @@ const Projects: React.FC = () => {
   const loadData = async () => {
     if (!token) return;
     setLoading(true);
+    setError('');
     try {
       const projectsPromise = fetchProjects(token).catch(err => {
         console.warn('Projects: Failed to fetch projects', err);
@@ -46,11 +48,11 @@ const Projects: React.FC = () => {
       setTeams(teamsData || []);
       
       if (projectsData.length === 0 && teamsData.length === 0) {
-        // If both failed or are truly empty, we can show a generic hint but not a crash
         console.log('No data retrieved from synchronized sectors.');
       }
     } catch (err: any) {
       setError('Sector Access Restricted: Verify credentials.');
+      toast.error('Failed to load projects');
       console.error(err);
     } finally {
       setLoading(false);
@@ -84,19 +86,23 @@ const Projects: React.FC = () => {
       if (selectedProject?.id === projectId) {
         setSelectedProject({ ...selectedProject, status });
       }
+      toast.success('Project status updated');
     } catch (err: any) {
-      alert(err.message || 'Status transition failed.');
+      toast.error(err.message || 'Status transition failed.');
     }
   };
 
   const handleDeleteProject = async (id: number) => {
-    if (!token || !window.confirm('Delete this mission profile? This action is irreversible.')) return;
+    if (!token) return;
+    const isConfirmed = window.confirm('Are you sure you want to delete this mission profile? This action is irreversible.');
+    if (!isConfirmed) return;
     try {
       await deleteProject(id, token);
       setProjects(projects.filter(p => p.id !== id));
       if (selectedProject?.id === id) setDetailsOpen(false);
+      toast.success('Project deleted successfully');
     } catch (err: any) {
-      alert(err.message || 'Deletion protocol failed.');
+      toast.error(err.message || 'Deletion protocol failed.');
     }
   };
 
@@ -106,12 +112,15 @@ const Projects: React.FC = () => {
       if (selectedProject) {
         const updated = await updateProject(selectedProject.id, data, token);
         setProjects(projects.map(p => p.id === updated.id ? updated : p));
+        toast.success('Project updated successfully');
       } else {
         const created = await createProject(data, token);
         setProjects([...projects, created]);
+        toast.success('Project created successfully');
       }
       loadData();
     } catch (err: any) {
+      toast.error(err.message || 'Failed to save project');
       throw err;
     }
   };
@@ -129,9 +138,27 @@ const Projects: React.FC = () => {
 
   if (loading && projects.length === 0) {
     return (
-      <div className="p-12 flex flex-col items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Loading Campaign Data...</p>
+      <div className="space-y-6 animate-pulse p-4 sm:p-6 lg:p-8">
+        <div className="h-10 bg-gray-200 rounded-xl w-48 mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="bg-white border border-gray-100 rounded-3xl p-6 h-48 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-200 shrink-0"></div>
+                  <div className="space-y-3 w-full mt-1">
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center mt-6">
+                <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+                <div className="h-8 bg-gray-200 rounded-full w-24"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -216,8 +243,14 @@ const Projects: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold leading-none">
-          {error}
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <span className="text-rose-600 text-sm font-bold">{error}</span>
+          <button 
+            onClick={loadData}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+          >
+            <FiRefreshCcw size={14} /> Retry
+          </button>
         </div>
       )}
 
@@ -248,74 +281,76 @@ const Projects: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-sm">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-50">
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Project Identity</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Squad</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredProjects.map(p => (
-                  <tr key={p.id} className="group hover:bg-gray-50/40 transition-colors cursor-pointer" onClick={() => handleViewDetails(p)}>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-xs font-black">
-                          {p.name.substring(0, 1).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors">{p.name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold mt-0.5">ID: #CAM-{p.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-transparent group-hover:border-gray-200 transition-all font-bold text-xs text-gray-600">
-                        <FiLayers size={13} />
-                        {getTeamName(p.team_id)}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div
-                        onClick={(e) => { e.stopPropagation(); }} // Prevent modal opening when clicking status (though table doesn't have quick switcher yet)
-                        className={`inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black uppercase tracking-tight
-                        ${p.status === 'active' ? 'text-emerald-600 bg-emerald-50' :
-                            p.status === 'completed' ? 'text-blue-600 bg-blue-50' :
-                              'text-amber-600 bg-amber-50'}`}
-                      >
-                        <FiActivity size={10} />
-                        {p.status === 'completed' ? 'Archived' : p.status === 'inactive' ? 'On Hold' : 'Active'}
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleViewDetails(p)}
-                          className="p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                        >
-                          <FiMaximize2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleEditProject(p)}
-                          className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProject(p.id)}
-                          className="p-2.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+          <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-50">
+                    <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Project Identity</th>
+                    <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Squad</th>
+                    <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                    <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredProjects.map(p => (
+                    <tr key={p.id} className="group hover:bg-gray-50/40 transition-colors cursor-pointer" onClick={() => handleViewDetails(p)}>
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-xs font-black shrink-0">
+                            {p.name.substring(0, 1).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{p.name}</p>
+                            <p className="text-[10px] text-gray-400 font-bold mt-0.5 whitespace-nowrap">ID: #CAM-{p.id}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-transparent group-hover:border-gray-200 transition-all font-bold text-xs text-gray-600 whitespace-nowrap">
+                          <FiLayers size={13} />
+                          {getTeamName(p.team_id)}
+                        </div>
+                      </td>
+                      <td className="px-6 sm:px-8 py-6">
+                        <div
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className={`inline-flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black uppercase tracking-tight whitespace-nowrap
+                          ${p.status === 'active' ? 'text-emerald-600 bg-emerald-50' :
+                              p.status === 'completed' ? 'text-blue-600 bg-blue-50' :
+                                'text-amber-600 bg-amber-50'}`}
+                        >
+                          <FiActivity size={10} />
+                          {p.status === 'completed' ? 'Archived' : p.status === 'inactive' ? 'On Hold' : 'Active'}
+                        </div>
+                      </td>
+                      <td className="px-6 sm:px-8 py-6">
+                        <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleViewDetails(p)}
+                            className="p-2 sm:p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                          >
+                            <FiMaximize2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleEditProject(p)}
+                            className="p-2 sm:p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProject(p.id)}
+                            className="p-2 sm:p-2.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )
       )}

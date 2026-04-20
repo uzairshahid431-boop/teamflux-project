@@ -27,6 +27,8 @@ const DeprecationDetailModal: React.FC<DeprecationDetailModalProps> = ({ isOpen,
     milestones: []
   });
 
+  const [error, setError] = useState<string>('');
+
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [editingMilestoneId, setEditingMilestoneId] = useState<number | null>(null);
   
@@ -66,9 +68,14 @@ const DeprecationDetailModal: React.FC<DeprecationDetailModalProps> = ({ isOpen,
       ...prev,
       [name]: name === 'project_id' ? (value ? Number(value) : null) : value
     }));
+    setError('');
   };
 
   const handleSave = () => {
+    if (!formData.title?.trim()) {
+      setError('Item Name is required');
+      return;
+    }
     onSave({
       ...(formData as DeprecationItem),
       id: deprecation ? deprecation.id : Date.now(),
@@ -146,14 +153,20 @@ const DeprecationDetailModal: React.FC<DeprecationDetailModalProps> = ({ isOpen,
                     <FiAlertCircle className="text-blue-500"/> Item Details
                 </h3>
 
+                {error && (
+                  <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold">
+                    {error}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-5">
                     <div className="col-span-2">
-                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Item Name</label>
-                        <input name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold transition-all" placeholder="e.g. v1 Customer REST API" />
+                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Item Name <span className="text-rose-500">*</span></label>
+                        <input name="title" value={formData.title} onChange={handleChange} className={`w-full px-4 py-3 rounded-xl border ${error.includes('Name') ? 'border-rose-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold transition-all`} placeholder="e.g. v1 Customer REST API" required />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Type</label>
+                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Type <span className="text-rose-500">*</span></label>
                         <select name="type" value={formData.type} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold transition-all">
                             <option value="API">API</option>
                             <option value="Feature">Feature</option>
@@ -164,7 +177,7 @@ const DeprecationDetailModal: React.FC<DeprecationDetailModalProps> = ({ isOpen,
                     </div>
 
                     <div>
-                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Impact Level</label>
+                        <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-2">Impact Level <span className="text-rose-500">*</span></label>
                         <select name="impact_level" value={formData.impact_level} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold transition-all">
                             <option value="Critical">Critical</option>
                             <option value="High">High</option>
