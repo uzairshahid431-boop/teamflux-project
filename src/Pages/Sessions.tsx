@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiSearch, FiCalendar, FiExternalLink, FiMaximize2, FiEdit2 } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiCalendar, FiExternalLink, FiMaximize2, FiEdit2, FiRefreshCcw } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { useAuth } from '../Context/AuthContext';
 import { fetchTeams } from '../Services/teamService';
 import type { Team } from '../Services/teamService';
@@ -35,15 +36,23 @@ const Sessions: React.FC = () => {
   const loadData = async () => {
     if (!token) return;
     setLoading(true);
+    setError('');
     try {
       const [sessionsData, teamsData] = await Promise.all([
-        fetchSessions(token),
-        fetchTeams(token)
+        fetchSessions(token).catch(err => {
+          console.warn('Failed to fetch sessions', err);
+          return [] as GrowthSession[];
+        }),
+        fetchTeams(token).catch(err => {
+          console.warn('Failed to fetch teams', err);
+          return [] as Team[];
+        })
       ]);
       setSessions(sessionsData);
       setTeams(teamsData);
     } catch (err: any) {
       setError('Connection disrupted: Intelligence retrieval failed.');
+      toast.error('Failed to load sessions');
       console.error(err);
     } finally {
       setLoading(false);
@@ -76,23 +85,29 @@ const Sessions: React.FC = () => {
       if (selectedSession) {
         const updated = await updateSession(selectedSession.id, data, token);
         setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+        toast.success('Session updated successfully');
       } else {
         const created = await createSession(data, token);
         setSessions(prev => [...prev, created]);
+        toast.success('Session created successfully');
       }
     } catch (err: any) {
+      toast.error(err.message || 'Failed to save session');
       throw err;
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!token || !window.confirm('Terminate this session profile? This action is final.')) return;
+    if (!token) return;
+    const isConfirmed = window.confirm('Terminate this session profile? This action is final.');
+    if (!isConfirmed) return;
     try {
       await deleteSession(id, token);
       setSessions(prev => prev.filter(s => s.id !== id));
       setIsDetailsOpen(false);
+      toast.success('Session deleted successfully');
     } catch (err: any) {
-      alert('Termination protocol failed: ' + err.message);
+      toast.error('Termination protocol failed: ' + err.message);
     }
   };
 
@@ -102,8 +117,9 @@ const Sessions: React.FC = () => {
       const updated = await updateSessionStatus(selectedSession.id, status, token);
       setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
       setSelectedSession(updated);
+      toast.success('Status updated successfully');
     } catch (err: any) {
-      alert('Status realignment failed: ' + err.message);
+      toast.error('Status realignment failed: ' + err.message);
     }
   };
 
@@ -111,8 +127,9 @@ const Sessions: React.FC = () => {
     if (!token || !selectedSession) return;
     try {
       await exportIcs(selectedSession.id, token);
+      toast.success('Export initiated');
     } catch (err: any) {
-      alert('Export failed: ' + err.message);
+      toast.error('Export failed: ' + err.message);
     }
   };
 
@@ -127,9 +144,40 @@ const Sessions: React.FC = () => {
 
   if (loading && sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Synchronizing Growth Data...</p>
+      <div className="space-y-6 animate-pulse p-4 sm:p-6 lg:p-8">
+        <div className="h-10 bg-gray-200 rounded-xl w-48 mb-8"></div>
+        <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+          <div className="border-b border-gray-50 bg-gray-50/50 p-4 flex gap-4">
+            <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/5"></div>
+          </div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="p-6 border-b border-gray-50 flex gap-4 items-center">
+              <div className="w-10 h-10 rounded-xl bg-gray-200 shrink-0"></div>
+              <div className="space-y-2 w-1/5">
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+              </div>
+              <div className="space-y-2 w-1/5">
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+              </div>
+              <div className="w-1/5">
+                <div className="h-6 bg-gray-200 rounded-lg w-20"></div>
+              </div>
+              <div className="w-1/5">
+                <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+              </div>
+              <div className="w-1/5 flex justify-end gap-2">
+                <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -194,110 +242,118 @@ const Sessions: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold leading-none">
-          {error}
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <span className="text-rose-600 text-sm font-bold">{error}</span>
+          <button 
+            onClick={loadData}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+          >
+            <FiRefreshCcw size={14} /> Retry
+          </button>
         </div>
       )}
 
       {/* Sessions Table */}
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50 border-b border-gray-50">
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth Context</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Chronology</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Squad</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filteredSessions.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-8 py-20 text-center">
-                   <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4">
-                         <FiCalendar size={32} />
-                      </div>
-                      <h3 className="text-lg font-black text-gray-900">No signals detected</h3>
-                      <p className="text-gray-400 text-xs font-medium mt-1">Refine your resonance filters or schedule a new interaction.</p>
-                   </div>
-                </td>
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-50">
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth Context</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Chronology</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Squad</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Operations</th>
               </tr>
-            ) : (
-              filteredSessions.map(session => (
-                <tr 
-                  key={session.id} 
-                  className="group hover:bg-gray-50/40 transition-colors cursor-pointer"
-                  onClick={() => handleViewDetails(session)}
-                >
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-black">
-                        {session.title.substring(0, 1).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors">{session.title}</p>
-                        <p className="text-[10px] text-gray-400 font-bold mt-0.5">{session.location || 'Remote Protocol'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col">
-                       <span className="text-sm font-bold text-gray-700">{new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                       <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5">
-                          {session.start_time.split(' ')[1]?.substring(0, 5) || '--:--'}
-                       </span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-transparent group-hover:border-gray-200 transition-all font-bold text-xs text-gray-600">
-                      {getTeamName(session.team_id)}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight
-                      ${session.status === 'completed' ? 'text-emerald-600 bg-emerald-50' : 
-                        session.status === 'cancelled' ? 'text-rose-600 bg-rose-50' : 
-                        'text-blue-600 bg-blue-50'}`}
-                    >
-                      {session.status === 'planned' ? 'Scheduled' : session.status}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                      {session.meeting_link && (
-                        <a 
-                          href={session.meeting_link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                          title="Join Meeting"
-                        >
-                          <FiExternalLink size={16} />
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleViewDetails(session)}
-                        className="p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                        title="View Protocol"
-                      >
-                        <FiMaximize2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(session)}
-                        className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                        title="Modify Session"
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredSessions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-20 text-center">
+                     <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4">
+                           <FiCalendar size={32} />
+                        </div>
+                        <h3 className="text-lg font-black text-gray-900">No signals detected</h3>
+                        <p className="text-gray-400 text-xs font-medium mt-1">Refine your resonance filters or schedule a new interaction.</p>
+                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredSessions.map(session => (
+                  <tr 
+                    key={session.id} 
+                    className="group hover:bg-gray-50/40 transition-colors cursor-pointer"
+                    onClick={() => handleViewDetails(session)}
+                  >
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xs font-black shrink-0">
+                          {session.title.substring(0, 1).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors whitespace-nowrap">{session.title}</p>
+                          <p className="text-[10px] text-gray-400 font-bold mt-0.5 whitespace-nowrap">{session.location || 'Remote Protocol'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex flex-col">
+                         <span className="text-sm font-bold text-gray-700 whitespace-nowrap">{new Date(session.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                         <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-0.5 whitespace-nowrap">
+                            {session.start_time.split(' ')[1]?.substring(0, 5) || '--:--'}
+                         </span>
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-transparent group-hover:border-gray-200 transition-all font-bold text-xs text-gray-600 whitespace-nowrap">
+                        {getTeamName(session.team_id)}
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight whitespace-nowrap
+                        ${session.status === 'completed' ? 'text-emerald-600 bg-emerald-50' : 
+                          session.status === 'cancelled' ? 'text-rose-600 bg-rose-50' : 
+                          'text-blue-600 bg-blue-50'}`}
+                      >
+                        {session.status === 'planned' ? 'Scheduled' : session.status}
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                        {session.meeting_link && (
+                          <a 
+                            href={session.meeting_link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-2 sm:p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                            title="Join Meeting"
+                          >
+                            <FiExternalLink size={16} />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleViewDetails(session)}
+                          className="p-2 sm:p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                          title="View Protocol"
+                        >
+                          <FiMaximize2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(session)}
+                          className="p-2 sm:p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Modify Session"
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modals */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiUsers } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiUsers, FiRefreshCcw } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { fetchTeams, createTeam, updateTeam, deleteTeam } from '../Services/teamService';
 import type { Team } from '../Services/teamService';
 import { fetchAllUsers } from '../utils/api';
@@ -22,6 +23,7 @@ const Teams: React.FC = () => {
   const loadData = async () => {
     if (!token) return;
     setLoading(true);
+    setError('');
     try {
       const teamsPromise = fetchTeams(token).catch(err => {
         console.warn('Teams: Failed to fetch teams', err);
@@ -41,6 +43,7 @@ const Teams: React.FC = () => {
       setAllUsers(usersData || []);
     } catch (err: any) {
       setError('Matrix synchronization failed: Data sector isolated.');
+      toast.error('Failed to load teams');
       console.error(err);
     } finally {
       setLoading(false);
@@ -62,12 +65,15 @@ const Teams: React.FC = () => {
   };
 
   const handleDeleteTeam = async (id: number) => {
-    if (!token || !window.confirm('Are you sure you want to dismantle this team? All member associations will be severed.')) return;
+    if (!token) return;
+    const isConfirmed = window.confirm('Are you sure you want to dismantle this team? All member associations will be severed.');
+    if (!isConfirmed) return;
     try {
       await deleteTeam(id, token);
       setTeams(teams.filter(t => t.id !== id));
+      toast.success('Team deleted successfully');
     } catch (err: any) {
-      alert(err.message || 'Deletion protocol failed.');
+      toast.error(err.message || 'Deletion protocol failed.');
     }
   };
 
@@ -77,12 +83,15 @@ const Teams: React.FC = () => {
       if (selectedTeam) {
         const updated = await updateTeam(selectedTeam.id, name, leadId, token);
         setTeams(teams.map(t => t.id === updated.id ? updated : t));
+        toast.success('Team updated successfully');
       } else {
         const created = await createTeam(name, leadId, token);
         setTeams([...teams, created]);
+        toast.success('Team created successfully');
       }
       loadData(); // Reload to get full lead/member details if not returned fully
     } catch (err: any) {
+      toast.error(err.message || 'Failed to save team');
       throw err;
     }
   };
@@ -94,12 +103,39 @@ const Teams: React.FC = () => {
 
   if (loading && teams.length === 0) {
     return (
-      <div className="p-12 flex flex-col items-center justify-center min-h-[400px]">
-        <div className="w-16 h-16 rounded-3xl bg-gray-50 flex items-center justify-center mb-6 border border-gray-100 animate-pulse">
-          <FiUsers className="text-gray-300" size={32} />
+      <div className="space-y-6 animate-pulse p-4 sm:p-6 lg:p-8">
+        <div className="h-10 bg-gray-200 rounded-xl w-48 mb-8"></div>
+        <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+          <div className="border-b border-gray-50 bg-gray-50/50 p-4 flex gap-4">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          </div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="p-6 border-b border-gray-50 flex gap-4 items-center">
+              <div className="w-12 h-12 rounded-2xl bg-gray-200 shrink-0"></div>
+              <div className="space-y-2 w-1/4">
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+              </div>
+              <div className="flex gap-3 w-1/4 items-center">
+                <div className="w-9 h-9 rounded-full bg-gray-200 shrink-0"></div>
+                <div className="space-y-2 w-full">
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+              <div className="w-1/4">
+                <div className="h-8 bg-gray-200 rounded-xl w-16"></div>
+              </div>
+              <div className="w-1/4 flex justify-end gap-2">
+                <div className="h-10 w-10 bg-gray-200 rounded-xl"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-xl"></div>
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-gray-400 font-bold uppercase tracking-widest text-[10px]">Synchronizing Matrix...</p>
       </div>
     );
   }
@@ -141,9 +177,17 @@ const Teams: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
-          {error}
+        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+          <div className="flex items-center gap-3 text-rose-600 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+            {error}
+          </div>
+          <button 
+            onClick={loadData}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-200 transition-colors"
+          >
+            <FiRefreshCcw size={14} /> Retry
+          </button>
         </div>
       )}
 
@@ -166,69 +210,71 @@ const Teams: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-50">
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Team Identity</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Leadership</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Members</th>
-                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Operations</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredTeams.map((team) => (
-                <tr key={team.id} className="group hover:bg-gray-50/30 transition-colors">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-100 group-hover:scale-105 transition-transform">
-                        {team.name.substring(0, 2).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{team.name}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">ID: #{team.id.toString().padStart(4, '0')}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-black border border-white ring-2 ring-gray-50">
-                        {team.lead?.name.charAt(0).toUpperCase() || '?'}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-700">{team.lead?.name || 'Unassigned'}</p>
-                        <p className="text-[10px] text-gray-400 font-semibold lowercase">lead</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-xl">
-                      <FiUsers className="text-gray-400" size={14} />
-                      <span className="text-sm font-bold text-gray-700">{team.members?.length || 0}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditTeam(team)}
-                        className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                        title="Edit Core"
-                      >
-                        <FiEdit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTeam(team.id)}
-                        className="p-3 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                        title="Dismantle"
-                      >
-                        <FiTrash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+        <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-50">
+                  <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Team Identity</th>
+                  <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Leadership</th>
+                  <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Members</th>
+                  <th className="px-6 sm:px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Operations</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredTeams.map((team) => (
+                  <tr key={team.id} className="group hover:bg-gray-50/30 transition-colors">
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-100 group-hover:scale-105 transition-transform shrink-0">
+                          {team.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors whitespace-nowrap">{team.name}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1 whitespace-nowrap">ID: #{team.id.toString().padStart(4, '0')}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-black border border-white ring-2 ring-gray-50 shrink-0">
+                          {team.lead?.name.charAt(0).toUpperCase() || '?'}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-700 whitespace-nowrap">{team.lead?.name || 'Unassigned'}</p>
+                          <p className="text-[10px] text-gray-400 font-semibold lowercase">lead</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-xl">
+                        <FiUsers className="text-gray-400" size={14} />
+                        <span className="text-sm font-bold text-gray-700">{team.members?.length || 0}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 sm:px-8 py-6">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditTeam(team)}
+                          className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                          title="Edit Core"
+                        >
+                          <FiEdit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeam(team.id)}
+                          className="p-3 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Dismantle"
+                        >
+                          <FiTrash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
