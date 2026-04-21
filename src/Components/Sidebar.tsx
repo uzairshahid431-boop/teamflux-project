@@ -47,10 +47,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'md:w-20' : 'md:w-64'} w-64 flex flex-col`}
       >
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-6'} h-16 border-b border-gray-50`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between px-6'} h-12 border-b border-gray-50`}>
           <button
             onClick={() => setIsSidebarCollapsed(!isCollapsed)}
-            className="hidden md:flex p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+            className="hidden md:flex px-2 py-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-opacity"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             <FiMenu size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-0' : ''}`} />

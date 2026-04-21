@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const BASE_URL = "/api";
 
 export type ProjectStatus = 'active' | 'inactive' | 'completed';
@@ -22,65 +24,44 @@ export const fetchProjects = async (token: string, teamId?: number): Promise<Pro
     ? `${BASE_URL}/projects/?team_id=${teamId}`
     : `${BASE_URL}/projects/`;
     
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to fetch projects.");
   }
-
-  return response.json();
 };
 
 export const createProject = async (data: ProjectCreateData, token: string): Promise<Project> => {
-  const response = await fetch(`${BASE_URL}/projects/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to create project.");
+  try {
+    const response = await axios.post(`${BASE_URL}/projects/`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || "Failed to create project.");
   }
-
-  return response.json();
 };
 
 export const updateProject = async (id: number, data: Partial<ProjectCreateData>, token: string): Promise<Project> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to update project.");
+  try {
+    const response = await axios.put(`${BASE_URL}/projects/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || "Failed to update project.");
   }
-
-  return response.json();
 };
 
 export const deleteProject = async (id: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/projects/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    await axios.delete(`${BASE_URL}/projects/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (error: any) {
     throw new Error("Failed to delete project.");
   }
 };

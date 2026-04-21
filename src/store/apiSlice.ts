@@ -1,17 +1,57 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import type { BaseQueryFn } from '@reduxjs/toolkit/query';
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosError } from 'axios';
+
+const axiosBaseQuery =
+  (
+    { baseUrl }: { baseUrl: string } = { baseUrl: '' }
+  ): BaseQueryFn<
+    {
+      url: string;
+      method?: AxiosRequestConfig['method'];
+      body?: AxiosRequestConfig['data'];
+      data?: AxiosRequestConfig['data'];
+      params?: AxiosRequestConfig['params'];
+      headers?: AxiosRequestConfig['headers'];
+    } | string,
+    unknown,
+    unknown
+  > =>
+  async (requestOpts) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const url = typeof requestOpts === 'string' ? requestOpts : requestOpts.url;
+      const method = typeof requestOpts === 'string' ? 'GET' : requestOpts.method || 'GET';
+      const data = typeof requestOpts === 'string' ? undefined : (requestOpts.body || requestOpts.data);
+      const params = typeof requestOpts === 'string' ? undefined : requestOpts.params;
+      const headers = typeof requestOpts === 'string' ? {} : (requestOpts.headers || {});
+
+      const result = await axios({
+        url: baseUrl + url,
+        method,
+        data,
+        params,
+        headers: {
+          ...headers,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      return { data: result.data };
+    } catch (axiosError) {
+      const err = axiosError as AxiosError;
+      return {
+        error: {
+          status: err.response?.status,
+          data: err.response?.data || err.message,
+        },
+      };
+    }
+  };
 
 export const apiSlice = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: axiosBaseQuery({ baseUrl: '/api' }),
   tagTypes: ['Project', 'Team', 'TechnicalDebt', 'Session', 'Deprecation'],
   endpoints: (builder) => ({
     // Endpoints will be injected from specific files or defined here
