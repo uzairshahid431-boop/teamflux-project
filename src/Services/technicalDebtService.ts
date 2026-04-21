@@ -1,3 +1,4 @@
+import axios from "axios";
 import { BASE_URL } from '../utils/api';
 
 export type DebtPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -64,135 +65,88 @@ export const fetchTechnicalDebts = async (token: string, filters: DebtFilters = 
   // But we'll try to use them as params if the backend supports it eventually.
   // For now, the backend GET /technical-debts/ returns all filtered results.
   
-  const response = await fetch(`${BASE_URL}/technical-debts/?${params.toString()}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to fetch technical debts');
+  try {
+    const response = await axios.get(`${BASE_URL}/technical-debts/?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to fetch technical debts');
   }
-  
-  return response.json();
 };
 
 export const fetchTechnicalDebtsPaginated = async (token: string, skip: number = 0, limit: number = 10): Promise<TechnicalDebt[]> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/technical-debt?skip=${skip}&limit=${limit}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to fetch paginated technical debts');
+  try {
+    const response = await axios.get(`${BASE_URL}/technical-debts/technical-debt?skip=${skip}&limit=${limit}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to fetch paginated technical debts');
   }
-  
-  return response.json();
 };
 
 export const createTechnicalDebt = async (data: any, token: string): Promise<TechnicalDebt> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to create technical debt');
+  try {
+    const response = await axios.post(`${BASE_URL}/technical-debts/`, data, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to create technical debt');
   }
-  
-  return response.json();
 };
 
 export const updateTechnicalDebt = async (id: number, data: any, token: string): Promise<TechnicalDebt> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(data)
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to update technical debt');
+  try {
+    const response = await axios.put(`${BASE_URL}/technical-debts/${id}`, data, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to update technical debt');
   }
-  
-  return response.json();
 };
 
 export const deleteTechnicalDebt = async (id: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to delete technical debt');
+  try {
+    await axios.delete(`${BASE_URL}/technical-debts/${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to delete technical debt');
   }
 };
 
 export const updateDebtStatus = async (id: number, status: DebtStatus, token: string): Promise<any> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/${id}/status`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ status })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to update debt status');
+  try {
+    const response = await axios.patch(`${BASE_URL}/technical-debts/${id}/status`, { status }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to update debt status');
   }
-  
-  return response.json();
 };
 
 export const updateDebtPriority = async (id: number, priority: DebtPriority, token: string): Promise<any> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/${id}/priority`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ priority })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to update debt priority');
+  try {
+    const response = await axios.patch(`${BASE_URL}/technical-debts/${id}/priority`, { priority }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to update debt priority');
   }
-  
-  return response.json();
 };
 
 export const assignDebtOwner = async (id: number, owner_id: number, token: string): Promise<any> => {
-  const response = await fetch(`${BASE_URL}/technical-debts/${id}/assign`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ owner_id })
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to assign debt owner');
+  try {
+    const response = await axios.patch(`${BASE_URL}/technical-debts/${id}/assign`, { owner_id }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || 'Failed to assign debt owner');
   }
-  
-  return response.json();
 };

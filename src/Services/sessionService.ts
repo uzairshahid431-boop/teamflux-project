@@ -1,3 +1,4 @@
+import axios from "axios";
 const BASE_URL = "/api";
 
 export type SessionStatus = 'planned' | 'completed' | 'cancelled';
@@ -58,225 +59,162 @@ export const fetchSessions = async (token: string, filters: { team_id?: number; 
   if (filters.team_id) queryParams.append('team_id', filters.team_id.toString());
   if (filters.status) queryParams.append('status', filters.status);
   
-  const response = await fetch(`${BASE_URL}/growth-sessions/?${queryParams.toString()}`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.get(`${BASE_URL}/growth-sessions/?${queryParams.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to fetch sessions.");
   }
-
-  return response.json();
 };
 
 export const createSession = async (data: GrowthSessionCreate, token: string): Promise<GrowthSession> => {
-  const response = await fetch(`${BASE_URL}/growth-sessions/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to create session.");
+  try {
+    const response = await axios.post(`${BASE_URL}/growth-sessions/`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || "Failed to create session.");
   }
-
-  return response.json();
 };
 
 export const updateSession = async (id: number, data: Partial<GrowthSessionCreate>, token: string): Promise<GrowthSession> => {
-  const response = await fetch(`${BASE_URL}/growth-sessions/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to update session.");
+  try {
+    const response = await axios.put(`${BASE_URL}/growth-sessions/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || "Failed to update session.");
   }
-
-  return response.json();
 };
 
 export const updateSessionStatus = async (id: number, status: SessionStatus, token: string): Promise<GrowthSession> => {
-  const response = await fetch(`${BASE_URL}/growth-sessions/${id}/status`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({ status }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Failed to update status.");
+  try {
+    const response = await axios.patch(`${BASE_URL}/growth-sessions/${id}/status`, { status }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.detail || "Failed to update status.");
   }
-
-  return response.json();
 };
 
 export const deleteSession = async (id: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/growth-sessions/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    await axios.delete(`${BASE_URL}/growth-sessions/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (error: any) {
     throw new Error("Failed to delete session.");
   }
 };
 
 export const exportIcs = async (id: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/growth-sessions/${id}/calendar-export`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await axios.get(`${BASE_URL}/growth-sessions/${id}/calendar-export`, {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'blob'
+    });
 
-  if (!response.ok) {
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `session-${id}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  } catch (error: any) {
     throw new Error("Failed to export calendar.");
   }
-
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `session-${id}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
 };
 
 export const fetchNotes = async (sessionId: number, token: string): Promise<SessionNote[]> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.get(`${BASE_URL}/sessions/${sessionId}/notes/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to fetch notes.");
   }
-  return response.json();
 };
 
 export const createNote = async (sessionId: number, content: string, token: string): Promise<SessionNote> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({ content }),
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.post(`${BASE_URL}/sessions/${sessionId}/notes/`, { content }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to create note.");
   }
-  return response.json();
 };
 
 export const updateNote = async (sessionId: number, noteId: number, content: string, token: string): Promise<SessionNote> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/${noteId}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({ content }),
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.patch(`${BASE_URL}/sessions/${sessionId}/notes/${noteId}`, { content }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to update note.");
   }
-  return response.json();
 };
 
 export const deleteNote = async (sessionId: number, noteId: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/notes/${noteId}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    await axios.delete(`${BASE_URL}/sessions/${sessionId}/notes/${noteId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (error: any) {
     throw new Error("Failed to delete note.");
   }
 };
 
 // Action Items operations
 export const fetchActionItems = async (sessionId: number, token: string): Promise<ActionItem[]> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.get(`${BASE_URL}/sessions/${sessionId}/action-items/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to fetch action items.");
   }
-  return response.json();
 };
 
 export const createActionItem = async (sessionId: number, data: { title: string; status?: ActionItemStatus; assignee_id?: number; due_date?: string }, token: string): Promise<ActionItem> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify({ ...data, titlr: data.title }), // Backend schema uses 'titlr' alias specifically for creation
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.post(`${BASE_URL}/sessions/${sessionId}/action-items/`, { ...data, titlr: data.title }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to create action item.");
   }
-  return response.json();
 };
 
 export const updateActionItem = async (sessionId: number, itemId: number, data: Partial<ActionItem>, token: string): Promise<ActionItem> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/${itemId}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await axios.patch(`${BASE_URL}/sessions/${sessionId}/action-items/${itemId}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error: any) {
     throw new Error("Failed to update action item.");
   }
-  return response.json();
 };
 
 export const deleteActionItem = async (sessionId: number, itemId: number, token: string): Promise<void> => {
-  const response = await fetch(`${BASE_URL}/sessions/${sessionId}/action-items/${itemId}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
+  try {
+    await axios.delete(`${BASE_URL}/sessions/${sessionId}/action-items/${itemId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (error: any) {
     throw new Error("Failed to delete action item.");
   }
 };

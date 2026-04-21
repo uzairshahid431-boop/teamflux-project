@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
@@ -42,16 +43,14 @@ const DebtDashboard: React.FC = () => {
     if (!token) return;
 
     try {
-      const response = await fetch('/api/dashboard/technical_debt/export', {
+      const response = await axios.get('/api/dashboard/technical_debt/export', {
         headers: {
           'Authorization': `Bearer ${token}`
-        }
+        },
+        responseType: 'blob'
       });
       
-      if (!response.ok) throw new Error('Export failed');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const a = document.createElement('a');
       a.href = url;
       a.download = `technical_debt_export_${new Date().toISOString().split('T')[0]}.csv`;
