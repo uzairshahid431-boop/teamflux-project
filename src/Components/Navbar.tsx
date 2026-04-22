@@ -15,11 +15,11 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  const { data: debts = [] } = useGetTechnicalDebtsQuery({}, { pollingInterval: 3000 });
-  const { data: projects = [] } = useGetProjectsQuery(undefined, { pollingInterval: 3000 });
-  const { data: sessions = [] } = useGetSessionsQuery(undefined, { pollingInterval: 3000 });
-  const { data: teams = [] } = useGetTeamsQuery(undefined, { pollingInterval: 3000 });
-  const { data: deprecations = [] } = useGetDeprecationsQuery(undefined, { pollingInterval: 3000 });
+  const { data: debts = [] } = useGetTechnicalDebtsQuery({});
+  const { data: projects = [] } = useGetProjectsQuery();
+  const { data: sessions = [] } = useGetSessionsQuery();
+  const { data: teams = [] } = useGetTeamsQuery();
+  const { data: deprecations = [] } = useGetDeprecationsQuery();
 
   const [readIds, setReadIds] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);

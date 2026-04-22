@@ -12,24 +12,29 @@ import {
   FiActivity
 } from 'react-icons/fi';
 import { useUI } from '../Context/UIContext';
+import { useAuth } from '../Context/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const navItems = [
-  { name: 'Home', path: '/dashboard', icon: FiHome },
-  { name: 'Teams', path: '/dashboard/teams', icon: FiUsers },
-  { name: 'Projects', path: '/dashboard/projects', icon: FiBriefcase },
-  { name: 'Sessions', path: '/dashboard/sessions', icon: FiClock },
-  { name: 'Debt', path: '/dashboard/debt', icon: FiAlertCircle },
-  { name: 'Analytics', path: '/dashboard/debt/analytics', icon: FiActivity },
-  { name: 'Deprecations', path: '/dashboard/deprecations', icon: FiArchive },
+const allNavItems = [
+  { name: 'Home', path: '/dashboard', icon: FiHome, roles: ['admin', 'lead', 'developer', 'viewer'] },
+  { name: 'Teams', path: '/dashboard/teams', icon: FiUsers, roles: ['admin', 'lead'] },
+  { name: 'Projects', path: '/dashboard/projects', icon: FiBriefcase, roles: ['admin', 'lead', 'developer', 'viewer'] },
+  { name: 'Sessions', path: '/dashboard/sessions', icon: FiClock, roles: ['admin', 'lead', 'developer'] },
+  { name: 'Debt', path: '/dashboard/debt', icon: FiAlertCircle, roles: ['admin', 'lead', 'developer'] },
+  { name: 'Analytics', path: '/dashboard/debt/analytics', icon: FiActivity, roles: ['admin', 'lead'] },
+  { name: 'Deprecations', path: '/dashboard/deprecations', icon: FiArchive, roles: ['admin', 'lead', 'developer'] },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { isSidebarCollapsed: isCollapsed, setIsSidebarCollapsed } = useUI();
+  const { user } = useAuth();
+  
+  const userRole = user?.role || 'viewer';
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   return (
     <>

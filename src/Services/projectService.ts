@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const BASE_URL = "/api";
-
 export type ProjectStatus = 'active' | 'inactive' | 'completed';
 
 export interface Project {

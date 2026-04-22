@@ -1,47 +1,91 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { useAuth } from "../Context/AuthContext";
-import { fetchSessions, type ActionItem } from "../Services/sessionService";
-import { fetchDashboardSummary, type DashboardStats } from "../Services/dashboardService";
 import { FiCheckCircle, FiClock, FiAlertCircle, FiChevronRight, FiBriefcase, FiTarget, FiUsers } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { 
+  useGetProjectsQuery, 
+  useGetTeamsQuery, 
+  useGetTechnicalDebtsQuery, 
+  useGetSessionsQuery 
+} from "../store/apiSlice";
 
 const Dashboard: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [myActions, setMyActions] = useState<ActionItem[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      if (!token || !user) return;
-      try {
-        const [sessions, summaryData] = await Promise.all([
-          fetchSessions(token),
-          fetchDashboardSummary(token)
-        ]);
-        
-        // Process Actions
-        const allActions = sessions.flatMap(s => s.action_items || []);
-        const filtered = allActions.filter(item => item.assignee_id === user.id && item.status !== 'completed');
-        setMyActions(filtered.sort((a, b) => {
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-        }));
+  const { data: projects = [], isLoading: isProjectsLoading } = useGetProjectsQuery();
+  const { data: teams = [], isLoading: isTeamsLoading } = useGetTeamsQuery();
+  const { data: debts = [], isLoading: isDebtsLoading } = useGetTechnicalDebtsQuery({});
+  const { data: sessions = [], isLoading: isSessionsLoading } = useGetSessionsQuery();
 
-        setStats(summaryData);
-      } catch (error) {
-        console.error("Failed to load dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
+  const loading = isProjectsLoading || isTeamsLoading || isDebtsLoading || isSessionsLoading;
+
+  const { stats, myActions } = useMemo(() => {
+    // Process Actions
+    const allActions = sessions.flatMap((s: any) => s.action_items || []);
+    const filtered = allActions.filter((item: any) => item.assignee_id === user?.id && item.status !== 'completed');
+    const sortedActions = filtered.sort((a: any, b: any) => {
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+
+    // Calculate stats
+    const totalProjects = projects.length;
+    const activeTeams = teams.length;
+    
+    // Basic score calculation: start with 100, subtract for each open debt
+    // More points subtracted for higher priority
+    const openDebts = debts.filter((d: any) => d.status === 'open' || d.status === 'in_progress' || d.status === 'identified');
+    const debtScore = Math.max(0, 100 - (openDebts.length * 2) - (openDebts.filter((d: any) => d.priority === 'critical' || d.priority === 'high').length * 3));
+    
+    const debtStatus = debtScore > 80 ? 'Healthy Refactor' : debtScore > 60 ? 'Managing Debt' : 'Critical Focus';
+
+    // Compose Recent Activity
+    const activity = [
+      ...projects.slice(-5).map((p: any) => ({
+        id: `p-${p.id}`,
+        type: 'project' as const,
+        title: p.name,
+        subtitle: `Project initialized in ${p.status} state`,
+        date: new Date().toISOString(), // Projects model doesn't have created_at in frontend interface yet, using mock for now or we could add it
+        link: '/dashboard/projects'
+      })),
+      ...debts.slice(-5).map((d: any) => ({
+        id: `d-${d.id}`,
+        type: 'debt' as const,
+        title: d.title,
+        subtitle: `${d.project?.name || 'In-System'} Efficiency Debt • ${d.priority}`,
+        date: d.created_at,
+        link: '/dashboard/debt'
+      })),
+      ...sessions.slice(-5).map((s: any) => ({
+        id: `s-${s.id}`,
+        type: 'session' as const,
+        title: s.title,
+        subtitle: `Growth Session • ${s.status}`,
+        date: s.date, // Using session date
+        link: '/dashboard/sessions'
+      }))
+    ];
+
+    // Sort by date descending
+    const sortedActivity = activity.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+
+    const calculatedStats = {
+      totalProjects,
+      projectsChange: `+0 This Week`,
+      activeTeams,
+      teamsStatus: "Stable Impact",
+      debtScore,
+      debtStatus,
+      recentActivity: sortedActivity
     };
 
-    loadDashboardData();
-  }, [token, user]);
+    return { stats: calculatedStats, myActions: sortedActions };
+  }, [projects, teams, debts, sessions, user]);
 
-  const overdueCount = myActions.filter(item => item.due_date && new Date(item.due_date) < new Date()).length;
+  const overdueCount = myActions.filter((item: any) => item.due_date && new Date(item.due_date) < new Date()).length;
 
   return (
     <div className="space-y-6">
@@ -165,7 +209,7 @@ const Dashboard: React.FC = () => {
                   <p className="text-xs font-bold text-gray-500">All caught up!</p>
                 </div>
               ) : (
-                myActions.map(item => {
+                myActions.map((item: any) => {
                   const isOverdue = item.due_date && new Date(item.due_date) < new Date();
                   return (
                     <div key={item.id} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border border-white/5 transition-all cursor-pointer group">
@@ -199,3 +243,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
